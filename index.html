@@ -15,6 +15,7 @@
             --charge-target: #f59e0b;
             --input-bg: #1f2937;
             --input-border: #374151;
+            --accent-blue: #38bdf8;
         }
 
         body {
@@ -184,7 +185,7 @@
 
         input[type="number"]:focus {
             outline: none;
-            border-color: #38bdf8;
+            border-color: var(--accent-blue);
         }
 
         .unit-badge {
@@ -230,12 +231,46 @@
         }
 
         .panel-value.highlight {
-            font-size: 28px;
-            color: #38bdf8;
             grid-column: span 2;
             margin-top: 5px;
             border-top: 1px solid #1f2937;
-            padding-top: 12px;
+            padding-top: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .time-box {
+            text-align: right;
+        }
+
+        #view-time {
+            font-size: 26px;
+            color: var(--accent-blue);
+        }
+
+        #view-completion {
+            font-size: 22px;
+            color: var(--charge-target);
+        }
+
+        #current-now {
+            font-size: 16px;
+            color: #9ca3af;
+        }
+
+        .date-small {
+            display: block;
+            font-size: 11px;
+            color: #6b7280;
+            font-weight: normal;
+            margin-bottom: 2px;
         }
 
         #warning {
@@ -328,24 +363,34 @@
                 <div class="panel-label">필요 전력량</div>
                 <div class="panel-value"><span id="view-kwh"></span> kWh</div>
             </div>
+            
             <div class="panel-value highlight">
-                <div class="panel-label" style="color:#38bdf8;">완료까지 예상 시간</div>
-                <div id="view-time"></div>
+                <div class="info-row">
+                    <div class="panel-label">현재 시각</div>
+                    <div id="current-now"></div>
+                </div>
+
+                <div class="info-row">
+                    <div class="panel-label" style="color:var(--accent-blue);">예상 소요시간</div>
+                    <div id="view-time"></div>
+                </div>
+
+                <div class="info-row" style="border-top: 1px dashed #1f2937; padding-top: 12px;">
+                    <div class="panel-label" style="color:var(--charge-target);">완료 예정 시각</div>
+                    <div id="view-completion" class="time-box"></div>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-    // 입력값 동기화 및 계산 실행
     function syncInputs(id, type) {
         const slider = document.getElementById(id);
         const numInput = document.getElementById(id + '-num');
-
         if (type === 'slider') {
             numInput.value = slider.value;
         } else {
-            // 숫자 직접 입력 시에는 슬라이더만 움직이고 숫자를 강제 교정하지 않음 (타이핑 방해 방지)
             if (numInput.value !== '') {
                 slider.value = numInput.value;
             }
@@ -353,22 +398,27 @@
         calculate();
     }
 
-    // 입력 범위를 벗어난 경우 포커스가 나갈 때 자동 교정
     function clampInput(id) {
         const slider = document.getElementById(id);
         const numInput = document.getElementById(id + '-num');
-        
         const min = parseFloat(slider.min);
         const max = parseFloat(slider.max);
         let val = parseFloat(numInput.value);
-
         if (isNaN(val)) val = min;
         if (val < min) val = min;
         if (val > max) val = max;
-
         numInput.value = val;
         slider.value = val;
         calculate();
+    }
+
+    function formatDate(date) {
+        const y = date.getFullYear();
+        const m = date.getMonth() + 1;
+        const d = date.getDate();
+        const timeStr = date.toLocaleTimeString('ko-KR', { hour: 'numeric', minute: '2-digit', hour12: true });
+        
+        return `<span class="date-small">${y}년 ${m}월 ${d}일</span>${timeStr}`;
     }
 
     function calculate() {
@@ -382,22 +432,24 @@
         const batTarget = document.getElementById('bat-target');
         const warning = document.getElementById('warning');
 
-        // 배터리 비주얼 업데이트
         batCurrent.style.width = current + '%';
         
+        const now = new Date();
+        document.getElementById('current-now').innerText = now.toLocaleTimeString('ko-KR', { hour: 'numeric', minute: '2-digit', hour12: true });
+
         if (target <= current) {
             warning.style.display = 'block';
             batTarget.style.width = '0%';
             document.getElementById('view-range').innerText = '-';
             document.getElementById('view-kwh').innerText = '0.00';
             document.getElementById('view-time').innerText = '계산 불가';
+            document.getElementById('view-completion').innerHTML = '-';
             return;
         }
         
         warning.style.display = 'none';
         batTarget.style.width = (target - current) + '%';
 
-        // 공식 적용
         const reqKwh = capacity * ((target - current) / 100);
         const actualPower = power * (efficiency / 100);
         const totalHours = actualPower > 0 ? (reqKwh / actualPower) : 0;
@@ -405,12 +457,17 @@
         const h = Math.floor(totalHours);
         const m = Math.round((totalHours - h) * 60);
 
-        // 출력 업데이트
         document.getElementById('view-range').innerText = `${current}% → ${target}%`;
         document.getElementById('view-kwh').innerText = reqKwh.toFixed(2);
         document.getElementById('view-time').innerText = h > 0 ? `${h}시간 ${m}분` : `${m}분`;
+
+        // 완료 예정 시각 계산 (밀리초 단위 합산)
+        const completionDate = new Date(now.getTime() + Math.round(totalHours * 60 * 60 * 1000));
+        document.getElementById('view-completion').innerHTML = formatDate(completionDate);
     }
 
+    // 1분마다 현재 시각 갱신
+    setInterval(calculate, 60000);
     window.onload = calculate;
 </script>
 
