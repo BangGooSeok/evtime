@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>전기차 충전 소요시간 계산기</title>
+    <style>
+        :root {
+            --bg-color: #0a0c10;
+            --card-bg: #14171f;
+            --text-main: #f3f4f6;
+            --text-muted: #6b7280;
+            --accent-red: #e82127;
+            --charge-green: #10b981;
+            --charge-target: #f59e0b;
+            --input-bg: #1f2937;
+            --input-border: #374151;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .dashboard {
+            background: var(--card-bg);
+            border: 1px solid #232836;
+            border-radius: 24px;
+            padding: 35px;
+            width: 100%;
+            max-width: 480px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        h2 {
+            text-align: center;
+            font-weight: 700;
+            letter-spacing: -0.05em;
+            margin-top: 0;
+            margin-bottom: 30px;
+            font-size: 24px;
+            background: linear-gradient(to right, #fff, #888);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* 배터리 시각화 */
+        .battery-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 35px;
+            padding: 20px 0;
+            background: rgba(0,0,0,0.2);
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.03);
+        }
+
+        .battery-outer {
+            width: 180px;
+            height: 90px;
+            border: 4px solid #374151;
+            border-radius: 14px;
+            padding: 4px;
+            position: relative;
+            box-shadow: 0 0 20px rgba(0,0,0,0.4);
+        }
+
+        .battery-outer::after {
+            content: '';
+            position: absolute;
+            right: -12px;
+            top: 25px;
+            width: 8px;
+            height: 40px;
+            background: #374151;
+            border-radius: 0 6px 6px 0;
+        }
+
+        .battery-inline {
+            width: 100%;
+            height: 100%;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            background: #1f2937;
+        }
+
+        .fill-current {
+            height: 100%;
+            background: linear-gradient(90deg, #059669, var(--charge-green));
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 2;
+        }
+
+        .fill-target {
+            height: 100%;
+            background: linear-gradient(
+                45deg,
+                rgba(245, 158, 11, 0.4) 25%,
+                rgba(245, 158, 11, 0.2) 25%,
+                rgba(245, 158, 11, 0.2) 50%,
+                rgba(245, 158, 11, 0.4) 50%,
+                rgba(245, 158, 11, 0.4) 75%,
+                rgba(245, 158, 11, 0.2) 75%,
+                rgba(245, 158, 11, 0.2) 100%
+            );
+            background-size: 20px 20px;
+            animation: barberPole 1.5s linear infinite;
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1;
+        }
+
+        @keyframes barberPole {
+            from { background-position: 0 0; }
+            to { background-position: 20px 0; }
+        }
+
+        /* 컨트롤 그룹 */
+        .control-group {
+            margin-bottom: 22px;
+        }
+
+        .control-label {
+            font-size: 13px;
+            color: #9ca3af;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .input-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            -webkit-appearance: none;
+            background: #2d3139;
+            height: 6px;
+            border-radius: 3px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #fff;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(255,255,255,0.5);
+        }
+
+        .num-input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        input[type="number"] {
+            width: 85px;
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 8px;
+            color: var(--text-main);
+            padding: 8px 32px 8px 10px;
+            font-size: 14px;
+            font-weight: 600;
+            text-align: right;
+            box-sizing: border-box;
+        }
+
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #38bdf8;
+        }
+
+        .unit-badge {
+            position: absolute;
+            right: 8px;
+            font-size: 11px;
+            color: var(--text-muted);
+            pointer-events: none;
+        }
+
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        /* 결과 패널 */
+        .display-panel {
+            margin-top: 30px;
+            background: #090b0f;
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 16px;
+            padding: 20px;
+        }
+
+        .display-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .panel-label {
+            font-size: 11px;
+            color: #6b7280;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .panel-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #e5e7eb;
+        }
+
+        .panel-value.highlight {
+            font-size: 28px;
+            color: #38bdf8;
+            grid-column: span 2;
+            margin-top: 5px;
+            border-top: 1px solid #1f2937;
+            padding-top: 12px;
+        }
+
+        #warning {
+            color: var(--accent-red);
+            font-size: 12px;
+            text-align: center;
+            margin-top: 10px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="dashboard">
+    <h2>충전 소요시간 계산기</h2>
+
+    <div class="battery-container">
+        <div class="battery-outer">
+            <div class="battery-inline">
+                <div id="bat-current" class="fill-current"></div>
+                <div id="bat-target" class="fill-target"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="control-group">
+        <div class="control-label">배터리 용량</div>
+        <div class="input-row">
+            <input type="range" id="capacity" min="50" max="120" value="81.6" step="0.1" oninput="syncInputs('capacity', 'slider')">
+            <div class="num-input-wrapper">
+                <input type="number" id="capacity-num" value="81.6" step="0.1" oninput="syncInputs('capacity', 'num')" onblur="clampInput('capacity')">
+                <span class="unit-badge">kWh</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="control-group">
+        <div class="control-label">현재 배터리 잔량</div>
+        <div class="input-row">
+            <input type="range" id="current" min="0" max="100" value="35" oninput="syncInputs('current', 'slider')">
+            <div class="num-input-wrapper">
+                <input type="number" id="current-num" value="35" oninput="syncInputs('current', 'num')" onblur="clampInput('current')">
+                <span class="unit-badge">%</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="control-group">
+        <div class="control-label">목표 충전량</div>
+        <div class="input-row">
+            <input type="range" id="target" min="0" max="100" value="100" oninput="syncInputs('target', 'slider')">
+            <div class="num-input-wrapper">
+                <input type="number" id="target-num" value="100" oninput="syncInputs('target', 'num')" onblur="clampInput('target')">
+                <span class="unit-badge">%</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="control-group">
+        <div class="control-label">충전기 출력</div>
+        <div class="input-row">
+            <input type="range" id="power" min="1" max="11" value="7" step="0.1" oninput="syncInputs('power', 'slider')">
+            <div class="num-input-wrapper">
+                <input type="number" id="power-num" value="7" step="0.1" oninput="syncInputs('power', 'num')" onblur="clampInput('power')">
+                <span class="unit-badge">kW</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="control-group">
+        <div class="control-label">충전 효율</div>
+        <div class="input-row">
+            <input type="range" id="efficiency" min="50" max="100" value="90" oninput="syncInputs('efficiency', 'slider')">
+            <div class="num-input-wrapper">
+                <input type="number" id="efficiency-num" value="90" oninput="syncInputs('efficiency', 'num')" onblur="clampInput('efficiency')">
+                <span class="unit-badge">%</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="warning">⚠️ 목표 충전량이 현재 잔량보다 높아야 합니다.</div>
+
+    <div class="display-panel">
+        <div class="display-grid">
+            <div>
+                <div class="panel-label">충전 구간</div>
+                <div class="panel-value" id="view-range"></div>
+            </div>
+            <div>
+                <div class="panel-label">필요 전력량</div>
+                <div class="panel-value"><span id="view-kwh"></span> kWh</div>
+            </div>
+            <div class="panel-value highlight">
+                <div class="panel-label" style="color:#38bdf8;">완료까지 예상 시간</div>
+                <div id="view-time"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 입력값 동기화 및 계산 실행
+    function syncInputs(id, type) {
+        const slider = document.getElementById(id);
+        const numInput = document.getElementById(id + '-num');
+
+        if (type === 'slider') {
+            numInput.value = slider.value;
+        } else {
+            // 숫자 직접 입력 시에는 슬라이더만 움직이고 숫자를 강제 교정하지 않음 (타이핑 방해 방지)
+            if (numInput.value !== '') {
+                slider.value = numInput.value;
+            }
+        }
+        calculate();
+    }
+
+    // 입력 범위를 벗어난 경우 포커스가 나갈 때 자동 교정
+    function clampInput(id) {
+        const slider = document.getElementById(id);
+        const numInput = document.getElementById(id + '-num');
+        
+        const min = parseFloat(slider.min);
+        const max = parseFloat(slider.max);
+        let val = parseFloat(numInput.value);
+
+        if (isNaN(val)) val = min;
+        if (val < min) val = min;
+        if (val > max) val = max;
+
+        numInput.value = val;
+        slider.value = val;
+        calculate();
+    }
+
+    function calculate() {
+        const capacity = parseFloat(document.getElementById('capacity').value) || 0;
+        const current = parseFloat(document.getElementById('current').value) || 0;
+        const target = parseFloat(document.getElementById('target').value) || 0;
+        const power = parseFloat(document.getElementById('power').value) || 0;
+        const efficiency = parseFloat(document.getElementById('efficiency').value) || 0;
+
+        const batCurrent = document.getElementById('bat-current');
+        const batTarget = document.getElementById('bat-target');
+        const warning = document.getElementById('warning');
+
+        // 배터리 비주얼 업데이트
+        batCurrent.style.width = current + '%';
+        
+        if (target <= current) {
+            warning.style.display = 'block';
+            batTarget.style.width = '0%';
+            document.getElementById('view-range').innerText = '-';
+            document.getElementById('view-kwh').innerText = '0.00';
+            document.getElementById('view-time').innerText = '계산 불가';
+            return;
+        }
+        
+        warning.style.display = 'none';
+        batTarget.style.width = (target - current) + '%';
+
+        // 공식 적용
+        const reqKwh = capacity * ((target - current) / 100);
+        const actualPower = power * (efficiency / 100);
+        const totalHours = actualPower > 0 ? (reqKwh / actualPower) : 0;
+
+        const h = Math.floor(totalHours);
+        const m = Math.round((totalHours - h) * 60);
+
+        // 출력 업데이트
+        document.getElementById('view-range').innerText = `${current}% → ${target}%`;
+        document.getElementById('view-kwh').innerText = reqKwh.toFixed(2);
+        document.getElementById('view-time').innerText = h > 0 ? `${h}시간 ${m}분` : `${m}분`;
+    }
+
+    window.onload = calculate;
+</script>
+
+</body>
+</html>
