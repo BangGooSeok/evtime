@@ -19,8 +19,13 @@
             --accent-blue: #38bdf8;
         }
 
+        * {
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                Helvetica, Arial, sans-serif;
             background-color: var(--bg-color);
             color: var(--text-main);
             display: flex;
@@ -29,7 +34,6 @@
             min-height: 100vh;
             margin: 0;
             padding: 20px;
-            box-sizing: border-box;
         }
 
         .dashboard {
@@ -54,7 +58,7 @@
             -webkit-text-fill-color: transparent;
         }
 
-        /* 배터리 시각화 */
+        /* 배터리 */
         .battery-container {
             display: flex;
             justify-content: center;
@@ -77,7 +81,7 @@
         }
 
         .battery-outer::after {
-            content: '';
+            content: "";
             position: absolute;
             right: -12px;
             top: 25px;
@@ -99,7 +103,11 @@
 
         .fill-current {
             height: 100%;
-            background: linear-gradient(90deg, #059669, var(--charge-green));
+            background: linear-gradient(
+                90deg,
+                #059669,
+                var(--charge-green)
+            );
             box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
             transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             z-index: 2;
@@ -127,12 +135,13 @@
             from {
                 background-position: 0 0;
             }
+
             to {
                 background-position: 20px 0;
             }
         }
 
-        /* 컨트롤 그룹 */
+        /* 입력 */
         .control-group {
             margin-bottom: 22px;
         }
@@ -153,6 +162,7 @@
         input[type="range"] {
             flex: 1;
             -webkit-appearance: none;
+            appearance: none;
             background: #2d3139;
             height: 6px;
             border-radius: 3px;
@@ -161,6 +171,7 @@
 
         input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
+            appearance: none;
             width: 18px;
             height: 18px;
             border-radius: 50%;
@@ -185,7 +196,6 @@
             font-size: 14px;
             font-weight: 600;
             text-align: right;
-            box-sizing: border-box;
         }
 
         input[type="number"]:focus {
@@ -207,7 +217,7 @@
             margin: 0;
         }
 
-        /* 결과 패널 */
+        /* 결과 */
         .display-panel {
             margin-top: 30px;
             background: #090b0f;
@@ -249,6 +259,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 15px;
         }
 
         .time-box {
@@ -258,6 +269,7 @@
         #view-time {
             font-size: 26px;
             color: var(--accent-blue);
+            text-align: right;
         }
 
         #view-completion {
@@ -268,6 +280,7 @@
         #current-now {
             font-size: 16px;
             color: #9ca3af;
+            font-variant-numeric: tabular-nums;
         }
 
         .date-small {
@@ -303,6 +316,7 @@
         </div>
     </div>
 
+    <!-- 배터리 용량 -->
     <div class="control-group">
         <div class="control-label">배터리 용량</div>
 
@@ -319,10 +333,13 @@
             >
 
             <div class="num-input-wrapper">
+
                 <input
                     type="number"
                     id="capacity-num"
                     value="81.6"
+                    min="50"
+                    max="120"
                     step="0.1"
                     oninput="syncInputs('capacity', 'num')"
                     onblur="clampInput('capacity')"
@@ -334,6 +351,7 @@
         </div>
     </div>
 
+    <!-- 현재 잔량 -->
     <div class="control-group">
         <div class="control-label">현재 배터리 잔량</div>
 
@@ -345,14 +363,19 @@
                 min="0"
                 max="100"
                 value="35"
+                step="1"
                 oninput="syncInputs('current', 'slider')"
             >
 
             <div class="num-input-wrapper">
+
                 <input
                     type="number"
                     id="current-num"
                     value="35"
+                    min="0"
+                    max="100"
+                    step="1"
                     oninput="syncInputs('current', 'num')"
                     onblur="clampInput('current')"
                 >
@@ -363,6 +386,7 @@
         </div>
     </div>
 
+    <!-- 목표 충전량 -->
     <div class="control-group">
         <div class="control-label">목표 충전량</div>
 
@@ -374,14 +398,19 @@
                 min="0"
                 max="100"
                 value="100"
+                step="1"
                 oninput="syncInputs('target', 'slider')"
             >
 
             <div class="num-input-wrapper">
+
                 <input
                     type="number"
                     id="target-num"
                     value="100"
+                    min="0"
+                    max="100"
+                    step="1"
                     oninput="syncInputs('target', 'num')"
                     onblur="clampInput('target')"
                 >
@@ -392,6 +421,7 @@
         </div>
     </div>
 
+    <!-- 충전기 출력 -->
     <div class="control-group">
         <div class="control-label">충전기 출력</div>
 
@@ -408,10 +438,13 @@
             >
 
             <div class="num-input-wrapper">
+
                 <input
                     type="number"
                     id="power-num"
                     value="7"
+                    min="1"
+                    max="11"
                     step="0.1"
                     oninput="syncInputs('power', 'num')"
                     onblur="clampInput('power')"
@@ -423,6 +456,7 @@
         </div>
     </div>
 
+    <!-- 충전 효율 -->
     <div class="control-group">
         <div class="control-label">충전 효율</div>
 
@@ -434,14 +468,19 @@
                 min="50"
                 max="100"
                 value="90"
+                step="1"
                 oninput="syncInputs('efficiency', 'slider')"
             >
 
             <div class="num-input-wrapper">
+
                 <input
                     type="number"
                     id="efficiency-num"
                     value="90"
+                    min="50"
+                    max="100"
+                    step="1"
                     oninput="syncInputs('efficiency', 'num')"
                     onblur="clampInput('efficiency')"
                 >
@@ -489,7 +528,7 @@
 
                     <div
                         class="panel-label"
-                        style="color:var(--accent-blue);"
+                        style="color: var(--accent-blue);"
                     >
                         예상 소요시간
                     </div>
@@ -501,14 +540,14 @@
                 <div
                     class="info-row"
                     style="
-                        border-top:1px dashed #1f2937;
-                        padding-top:12px;
+                        border-top: 1px dashed #1f2937;
+                        padding-top: 12px;
                     "
                 >
 
                     <div
                         class="panel-label"
-                        style="color:var(--charge-target);"
+                        style="color: var(--charge-target);"
                     >
                         완료 예정 시각
                     </div>
@@ -528,251 +567,421 @@
 
 </div>
 
-
 <script>
-    let calculationStartedAt = null;
-    let baseChargingMilliseconds = 0;
-    let lastCalculationKey = null;
 
     function syncInputs(id, type) {
-        const slider = document.getElementById(id);
-        const numInput = document.getElementById(id + '-num');
 
-        if (type === 'slider') {
-            numInput.value = slider.value;
+        const slider =
+            document.getElementById(id);
+
+        const numInput =
+            document.getElementById(id + "-num");
+
+
+        if (type === "slider") {
+
+            numInput.value =
+                slider.value;
+
         } else {
-            if (numInput.value !== '') {
-                slider.value = numInput.value;
+
+            if (numInput.value !== "") {
+                slider.value =
+                    numInput.value;
             }
+
         }
 
-        calculate(true);
+
+        calculate();
     }
+
 
     function clampInput(id) {
-        const slider = document.getElementById(id);
-        const numInput = document.getElementById(id + '-num');
 
-        const min = parseFloat(slider.min);
-        const max = parseFloat(slider.max);
+        const slider =
+            document.getElementById(id);
 
-        let val = parseFloat(numInput.value);
+        const numInput =
+            document.getElementById(id + "-num");
 
-        if (isNaN(val)) val = min;
-        if (val < min) val = min;
-        if (val > max) val = max;
 
-        numInput.value = val;
-        slider.value = val;
+        const min =
+            parseFloat(slider.min);
 
-        calculate(true);
+        const max =
+            parseFloat(slider.max);
+
+
+        let value =
+            parseFloat(numInput.value);
+
+
+        if (isNaN(value)) {
+            value = min;
+        }
+
+        if (value < min) {
+            value = min;
+        }
+
+        if (value > max) {
+            value = max;
+        }
+
+
+        numInput.value =
+            value;
+
+        slider.value =
+            value;
+
+
+        calculate();
     }
 
-    function formatDate(date) {
-        const y = date.getFullYear();
-        const m = date.getMonth() + 1;
-        const d = date.getDate();
 
-        const timeStr = date.toLocaleTimeString('ko-KR', {
-            hour: 'numeric',
-            minute: '2-digit',
-            second: '2-digit',
-            hour12: true
-        });
+    /*
+     * 현재 시각 표시
+     *
+     * 오후 8:15:23
+     */
+    function formatCurrentTime(date) {
+
+        return date.toLocaleTimeString(
+            "ko-KR",
+            {
+                hour: "numeric",
+                minute: "2-digit",
+                second: "2-digit",
+                hour12: true
+            }
+        );
+    }
+
+
+    /*
+     * 완료 예정 시각
+     *
+     * 날짜 + 시:분:초
+     */
+    function formatCompletionDate(date) {
+
+        const year =
+            date.getFullYear();
+
+        const month =
+            date.getMonth() + 1;
+
+        const day =
+            date.getDate();
+
+
+        const time =
+            date.toLocaleTimeString(
+                "ko-KR",
+                {
+                    hour: "numeric",
+                    minute: "2-digit",
+                    second: "2-digit",
+                    hour12: true
+                }
+            );
+
 
         return `
             <span class="date-small">
-                ${y}년 ${m}월 ${d}일
+                ${year}년 ${month}월 ${day}일
             </span>
-            ${timeStr}
+            ${time}
         `;
     }
 
-    function formatDuration(milliseconds) {
-        const totalSeconds = Math.floor(milliseconds / 1000);
 
-        const hours = Math.floor(totalSeconds / 3600);
-        const minutes = Math.floor((totalSeconds % 3600) / 60);
-        const seconds = totalSeconds % 60;
+    /*
+     * 밀리초를
+     *
+     * 8시간 25분 17초
+     *
+     * 형식으로 변환
+     */
+    function formatDuration(milliseconds) {
+
+        /*
+         * 계산 결과의 소수점 이하 초도
+         * 자연스럽게 반올림
+         */
+        const totalSeconds =
+            Math.round(
+                milliseconds / 1000
+            );
+
+
+        const hours =
+            Math.floor(
+                totalSeconds / 3600
+            );
+
+
+        const minutes =
+            Math.floor(
+                (totalSeconds % 3600) / 60
+            );
+
+
+        const seconds =
+            totalSeconds % 60;
+
 
         if (hours > 0) {
+
             return `${hours}시간 ${minutes}분 ${seconds}초`;
+
         }
 
+
         if (minutes > 0) {
+
             return `${minutes}분 ${seconds}초`;
+
         }
+
 
         return `${seconds}초`;
     }
 
-    function calculate(forceRecalculate = false) {
+
+    function calculate() {
+
         const capacity =
-            parseFloat(document.getElementById('capacity').value) || 0;
+            parseFloat(
+                document.getElementById("capacity").value
+            ) || 0;
+
 
         const current =
-            parseFloat(document.getElementById('current').value) || 0;
+            parseFloat(
+                document.getElementById("current").value
+            ) || 0;
+
 
         const target =
-            parseFloat(document.getElementById('target').value) || 0;
+            parseFloat(
+                document.getElementById("target").value
+            ) || 0;
+
 
         const power =
-            parseFloat(document.getElementById('power').value) || 0;
+            parseFloat(
+                document.getElementById("power").value
+            ) || 0;
+
 
         const efficiency =
-            parseFloat(document.getElementById('efficiency').value) || 0;
+            parseFloat(
+                document.getElementById("efficiency").value
+            ) || 0;
+
 
         const batCurrent =
-            document.getElementById('bat-current');
+            document.getElementById("bat-current");
+
 
         const batTarget =
-            document.getElementById('bat-target');
+            document.getElementById("bat-target");
+
 
         const warning =
-            document.getElementById('warning');
+            document.getElementById("warning");
 
-        const now = new Date();
 
         /*
-         * 현재 시각
+         * calculate()가 실행되는 바로 그 순간의
+         * 현재 시간을 사용합니다.
          */
-        document.getElementById('current-now').innerText =
-            now.toLocaleTimeString('ko-KR', {
-                hour: 'numeric',
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: true
-            });
+        const now =
+            new Date();
 
-        batCurrent.style.width = current + '%';
 
         /*
-         * 목표 충전량 검증
+         * 현재 시각은 계속 증가
+         */
+        document.getElementById("current-now").innerText =
+            formatCurrentTime(now);
+
+
+        /*
+         * 현재 배터리 상태 표시
+         */
+        batCurrent.style.width =
+            current + "%";
+
+
+        /*
+         * 목표 충전량이 현재 잔량보다
+         * 낮거나 같으면 계산 불가
          */
         if (target <= current) {
-            warning.style.display = 'block';
 
-            batTarget.style.width = '0%';
+            warning.style.display =
+                "block";
 
-            document.getElementById('view-range').innerText = '-';
-            document.getElementById('view-kwh').innerText = '0.00';
-            document.getElementById('view-time').innerText = '계산 불가';
-            document.getElementById('view-completion').innerHTML = '-';
 
-            calculationStartedAt = null;
-            baseChargingMilliseconds = 0;
-            lastCalculationKey = null;
+            batTarget.style.width =
+                "0%";
+
+
+            document.getElementById("view-range").innerText =
+                "-";
+
+
+            document.getElementById("view-kwh").innerText =
+                "0.00";
+
+
+            document.getElementById("view-time").innerText =
+                "계산 불가";
+
+
+            document.getElementById("view-completion").innerHTML =
+                "-";
+
 
             return;
         }
 
-        warning.style.display = 'none';
 
-        batTarget.style.width =
-            (target - current) + '%';
+        warning.style.display =
+            "none";
+
 
         /*
-         * 필요한 전력량
+         * 목표 충전 영역
          */
-        const reqKwh =
-            capacity * ((target - current) / 100);
+        batTarget.style.width =
+            (target - current) + "%";
+
 
         /*
-         * 실제 충전 출력
+         * 충전해야 할 배터리 에너지
+         *
+         * 예:
+         *
+         * 81.6kWh 배터리
+         * 35% → 100%
+         *
+         * 81.6 × 0.65
+         */
+        const requiredKwh =
+            capacity *
+            (
+                (target - current) / 100
+            );
+
+
+        /*
+         * 효율을 적용한 실질 충전 출력
+         *
+         * 7kW × 90%
+         * = 6.3kW
          */
         const actualPower =
-            power * (efficiency / 100);
+            power *
+            (
+                efficiency / 100
+            );
+
 
         /*
-         * 기본 충전시간
+         * 예상 충전 시간
+         *
+         * 필요한 에너지 ÷ 실제 충전 출력
          */
-        const totalHours =
-            actualPower > 0
-                ? reqKwh / actualPower
-                : 0;
+        const chargingHours =
+            requiredKwh /
+            actualPower;
 
-        const calculatedMilliseconds =
-            totalHours * 60 * 60 * 1000;
 
-        document.getElementById('view-range').innerText =
+        /*
+         * 밀리초 단위 예상 충전시간
+         */
+        const chargingMilliseconds =
+            chargingHours *
+            60 *
+            60 *
+            1000;
+
+
+        /*
+         * 기본 정보
+         */
+        document.getElementById("view-range").innerText =
             `${current}% → ${target}%`;
 
-        document.getElementById('view-kwh').innerText =
-            reqKwh.toFixed(2);
 
-        /*
-         * 입력값 변경 여부 확인
-         */
-        const calculationKey =
-            `${capacity}-${current}-${target}-${power}-${efficiency}`;
+        document.getElementById("view-kwh").innerText =
+            requiredKwh.toFixed(2);
 
-        /*
-         * 최초 실행 또는 입력값이 변경되면
-         * 계산 기준 시각 초기화
-         */
-        if (
-            forceRecalculate ||
-            calculationStartedAt === null ||
-            calculationKey !== lastCalculationKey
-        ) {
-            calculationStartedAt = now.getTime();
-
-            baseChargingMilliseconds =
-                calculatedMilliseconds;
-
-            lastCalculationKey =
-                calculationKey;
-        }
-
-        /*
-         * 계산을 시작한 이후 흐른 시간
-         */
-        const elapsedMilliseconds =
-            now.getTime() - calculationStartedAt;
 
         /*
          * 예상 소요시간
          *
-         * 시간이 흐를수록 증가
-         *
-         * 예:
-         * 8시간 20분 10초
-         * 8시간 20분 11초
-         * 8시간 20분 12초
+         * 아직 충전을 시작하지 않았으므로
+         * 이 값 자체는 시간이 지나도 변하지 않습니다.
          */
-        const displayDuration =
-            baseChargingMilliseconds +
-            elapsedMilliseconds;
+        document.getElementById("view-time").innerText =
+            formatDuration(
+                chargingMilliseconds
+            );
 
-        document.getElementById('view-time').innerText =
-            formatDuration(displayDuration);
 
         /*
-         * 완료 예정 시각
+         * 핵심
          *
-         * 현재 시각 + 현재 예상 소요시간
+         * 완료 예정 시각은 매번
+         *
+         * 현재 시각 + 예상 충전시간
+         *
+         * 으로 계산합니다.
+         *
+         * 따라서 현재 시각이 1초 증가하면
+         * 완료 예정 시각도 1초 증가합니다.
          */
-        const completionTimestamp =
-            now.getTime() +
-            displayDuration;
-
         const completionDate =
-            new Date(completionTimestamp);
+            new Date(
+                now.getTime()
+                +
+                chargingMilliseconds
+            );
 
-        document.getElementById('view-completion').innerHTML =
-            formatDate(completionDate);
+
+        document.getElementById("view-completion").innerHTML =
+            formatCompletionDate(
+                completionDate
+            );
     }
 
-    /*
-     * 화면은 250ms마다 갱신
-     */
-    setInterval(() => {
-        calculate(false);
-    }, 250);
 
-    window.onload = () => {
-        calculate(true);
-    };
+    /*
+     * 250ms마다 재계산
+     *
+     * 초가 바뀌는 시점이 자연스럽게 보이도록
+     * 1초보다 조금 짧게 갱신합니다.
+     */
+    setInterval(
+        calculate,
+        250
+    );
+
+
+    /*
+     * 최초 표시
+     */
+    window.addEventListener(
+        "load",
+        calculate
+    );
+
 </script>
 
 </body>
