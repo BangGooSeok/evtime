@@ -530,120 +530,55 @@
 
 
 <script>
-
-    /*
-     * 완료 예정 시각을 저장합니다.
-     *
-     * 입력값이 변경될 때만 다시 계산하고
-     * 평상시에는 이 시간을 기준으로
-     * 남은 시간을 실시간 계산합니다.
-     */
-    let completionTimestamp = null;
-
+    let calculationStartedAt = null;
+    let baseChargingMilliseconds = 0;
     let lastCalculationKey = null;
 
-
     function syncInputs(id, type) {
-
-        const slider =
-            document.getElementById(id);
-
-        const numInput =
-            document.getElementById(id + '-num');
-
+        const slider = document.getElementById(id);
+        const numInput = document.getElementById(id + '-num');
 
         if (type === 'slider') {
-
-            numInput.value =
-                slider.value;
-
+            numInput.value = slider.value;
         } else {
-
             if (numInput.value !== '') {
-
-                slider.value =
-                    numInput.value;
-
+                slider.value = numInput.value;
             }
-
         }
 
-
-        /*
-         * 입력값이 변경되었으므로
-         * 완료 예정 시각을 새로 계산합니다.
-         */
         calculate(true);
     }
 
-
     function clampInput(id) {
+        const slider = document.getElementById(id);
+        const numInput = document.getElementById(id + '-num');
 
-        const slider =
-            document.getElementById(id);
+        const min = parseFloat(slider.min);
+        const max = parseFloat(slider.max);
 
-        const numInput =
-            document.getElementById(id + '-num');
+        let val = parseFloat(numInput.value);
 
-
-        const min =
-            parseFloat(slider.min);
-
-        const max =
-            parseFloat(slider.max);
-
-
-        let val =
-            parseFloat(numInput.value);
-
-
-        if (isNaN(val)) {
-            val = min;
-        }
-
-        if (val < min) {
-            val = min;
-        }
-
-        if (val > max) {
-            val = max;
-        }
-
+        if (isNaN(val)) val = min;
+        if (val < min) val = min;
+        if (val > max) val = max;
 
         numInput.value = val;
         slider.value = val;
 
-
         calculate(true);
     }
 
-
-    /*
-     * 완료 예정 날짜 + 시각 표시
-     */
     function formatDate(date) {
+        const y = date.getFullYear();
+        const m = date.getMonth() + 1;
+        const d = date.getDate();
 
-        const y =
-            date.getFullYear();
-
-        const m =
-            date.getMonth() + 1;
-
-        const d =
-            date.getDate();
-
-
-        const timeStr =
-            date.toLocaleTimeString(
-                'ko-KR',
-                {
-                    hour: 'numeric',
-                    minute: '2-digit',
-                    second: '2-digit',
-                    hour12: true
-                }
-            );
-
+        const timeStr = date.toLocaleTimeString('ko-KR', {
+            hour: 'numeric',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true
+        });
 
         return `
             <span class="date-small">
@@ -653,333 +588,191 @@
         `;
     }
 
+    function formatDuration(milliseconds) {
+        const totalSeconds = Math.floor(milliseconds / 1000);
 
-    /*
-     * 남은 시간을
-     *
-     * 7시간 23분 18초
-     *
-     * 형태로 표시합니다.
-     */
-    function formatRemainingTime(milliseconds) {
-
-        if (milliseconds <= 0) {
-
-            return '충전 완료';
-
-        }
-
-
-        const totalSeconds =
-            Math.ceil(
-                milliseconds / 1000
-            );
-
-
-        const hours =
-            Math.floor(
-                totalSeconds / 3600
-            );
-
-
-        const minutes =
-            Math.floor(
-                (totalSeconds % 3600) / 60
-            );
-
-
-        const seconds =
-            totalSeconds % 60;
-
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+        const seconds = totalSeconds % 60;
 
         if (hours > 0) {
-
             return `${hours}시간 ${minutes}분 ${seconds}초`;
-
         }
-
 
         if (minutes > 0) {
-
             return `${minutes}분 ${seconds}초`;
-
         }
-
 
         return `${seconds}초`;
     }
 
-
     function calculate(forceRecalculate = false) {
-
         const capacity =
-            parseFloat(
-                document.getElementById('capacity').value
-            ) || 0;
-
+            parseFloat(document.getElementById('capacity').value) || 0;
 
         const current =
-            parseFloat(
-                document.getElementById('current').value
-            ) || 0;
-
+            parseFloat(document.getElementById('current').value) || 0;
 
         const target =
-            parseFloat(
-                document.getElementById('target').value
-            ) || 0;
-
+            parseFloat(document.getElementById('target').value) || 0;
 
         const power =
-            parseFloat(
-                document.getElementById('power').value
-            ) || 0;
-
+            parseFloat(document.getElementById('power').value) || 0;
 
         const efficiency =
-            parseFloat(
-                document.getElementById('efficiency').value
-            ) || 0;
-
+            parseFloat(document.getElementById('efficiency').value) || 0;
 
         const batCurrent =
             document.getElementById('bat-current');
 
-
         const batTarget =
             document.getElementById('bat-target');
-
 
         const warning =
             document.getElementById('warning');
 
-
-        const now =
-            new Date();
-
+        const now = new Date();
 
         /*
          * 현재 시각
-         *
-         * 초 단위까지 실시간 표시
          */
         document.getElementById('current-now').innerText =
-            now.toLocaleTimeString(
-                'ko-KR',
-                {
-                    hour: 'numeric',
-                    minute: '2-digit',
-                    second: '2-digit',
-                    hour12: true
-                }
-            );
+            now.toLocaleTimeString('ko-KR', {
+                hour: 'numeric',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: true
+            });
 
+        batCurrent.style.width = current + '%';
 
         /*
-         * 현재 배터리 시각화
-         */
-        batCurrent.style.width =
-            current + '%';
-
-
-        /*
-         * 잘못된 충전 범위
+         * 목표 충전량 검증
          */
         if (target <= current) {
+            warning.style.display = 'block';
 
-            warning.style.display =
-                'block';
+            batTarget.style.width = '0%';
 
+            document.getElementById('view-range').innerText = '-';
+            document.getElementById('view-kwh').innerText = '0.00';
+            document.getElementById('view-time').innerText = '계산 불가';
+            document.getElementById('view-completion').innerHTML = '-';
 
-            batTarget.style.width =
-                '0%';
-
-
-            document.getElementById('view-range').innerText =
-                '-';
-
-
-            document.getElementById('view-kwh').innerText =
-                '0.00';
-
-
-            document.getElementById('view-time').innerText =
-                '계산 불가';
-
-
-            document.getElementById('view-completion').innerHTML =
-                '-';
-
-
-            completionTimestamp = null;
-
+            calculationStartedAt = null;
+            baseChargingMilliseconds = 0;
             lastCalculationKey = null;
-
 
             return;
         }
 
+        warning.style.display = 'none';
 
-        warning.style.display =
-            'none';
-
-
-        /*
-         * 목표 충전 구간 표시
-         */
         batTarget.style.width =
             (target - current) + '%';
 
-
         /*
-         * 실제 배터리에 들어가야 하는 에너지
+         * 필요한 전력량
          */
         const reqKwh =
-            capacity *
-            (
-                (target - current) / 100
-            );
-
+            capacity * ((target - current) / 100);
 
         /*
-         * 효율을 적용한 실제 충전 출력
-         *
-         * 예:
-         *
-         * 7kW × 90%
-         *
-         * = 6.3kW
+         * 실제 충전 출력
          */
         const actualPower =
-            power *
-            (
-                efficiency / 100
-            );
-
+            power * (efficiency / 100);
 
         /*
-         * 총 충전시간
+         * 기본 충전시간
          */
         const totalHours =
             actualPower > 0
                 ? reqKwh / actualPower
                 : 0;
 
+        const calculatedMilliseconds =
+            totalHours * 60 * 60 * 1000;
 
         document.getElementById('view-range').innerText =
             `${current}% → ${target}%`;
 
-
         document.getElementById('view-kwh').innerText =
             reqKwh.toFixed(2);
 
-
         /*
-         * 현재 입력값 조합을 키로 저장
+         * 입력값 변경 여부 확인
          */
         const calculationKey =
             `${capacity}-${current}-${target}-${power}-${efficiency}`;
 
-
         /*
-         * 최초 실행 또는
-         * 입력값 변경 시에만
-         *
-         * 완료 예정 시각을 다시 계산합니다.
-         *
-         * 따라서 시간이 지나도
-         * 완료 예정 시각이 뒤로 밀리지 않습니다.
+         * 최초 실행 또는 입력값이 변경되면
+         * 계산 기준 시각 초기화
          */
         if (
             forceRecalculate ||
-            completionTimestamp === null ||
+            calculationStartedAt === null ||
             calculationKey !== lastCalculationKey
         ) {
+            calculationStartedAt = now.getTime();
 
-            completionTimestamp =
-                now.getTime()
-                +
-                (
-                    totalHours *
-                    60 *
-                    60 *
-                    1000
-                );
-
+            baseChargingMilliseconds =
+                calculatedMilliseconds;
 
             lastCalculationKey =
                 calculationKey;
         }
 
+        /*
+         * 계산을 시작한 이후 흐른 시간
+         */
+        const elapsedMilliseconds =
+            now.getTime() - calculationStartedAt;
 
         /*
-         * 현재 시각과
-         * 완료 예정 시각의 차이
-         */
-        const remainingMilliseconds =
-            completionTimestamp
-            -
-            now.getTime();
-
-
-        /*
-         * 실시간 남은 시간
+         * 예상 소요시간
          *
-         * 7시간 23분 18초
-         * 7시간 23분 17초
-         * 7시간 23분 16초
+         * 시간이 흐를수록 증가
          *
-         * 식으로 감소합니다.
+         * 예:
+         * 8시간 20분 10초
+         * 8시간 20분 11초
+         * 8시간 20분 12초
          */
+        const displayDuration =
+            baseChargingMilliseconds +
+            elapsedMilliseconds;
+
         document.getElementById('view-time').innerText =
-            formatRemainingTime(
-                remainingMilliseconds
-            );
-
+            formatDuration(displayDuration);
 
         /*
-         * 완료 예정 시각은 고정
+         * 완료 예정 시각
+         *
+         * 현재 시각 + 현재 예상 소요시간
          */
-        const completionDate =
-            new Date(
-                completionTimestamp
-            );
+        const completionTimestamp =
+            now.getTime() +
+            displayDuration;
 
+        const completionDate =
+            new Date(completionTimestamp);
 
         document.getElementById('view-completion').innerHTML =
-            formatDate(
-                completionDate
-            );
+            formatDate(completionDate);
     }
 
-
     /*
-     * 250ms마다 화면 갱신
-     *
-     * 실제 계산 기준은
-     * 항상 현재 시스템 시각이므로
-     * 타이머 오차가 누적되지 않습니다.
+     * 화면은 250ms마다 갱신
      */
-    setInterval(
-        () => {
+    setInterval(() => {
+        calculate(false);
+    }, 250);
 
-            calculate(false);
-
-        },
-        250
-    );
-
-
-    /*
-     * 최초 실행
-     */
-    window.onload =
-        () => {
-
-            calculate(true);
-
-        };
-
+    window.onload = () => {
+        calculate(true);
+    };
 </script>
 
 </body>
